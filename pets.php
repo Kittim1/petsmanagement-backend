@@ -2,92 +2,148 @@
 
 header('Content-Type: application/json');
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 
 include 'db.php';
-
-class PetManagementAPI
+class SavePets
 {
-    // Users operations
-    function addUser($json)
+
+    function addSpecies($json)
     {
         include 'db.php';
         $json = json_decode($json, true);
-        $sql = "INSERT INTO Users(Username, Email, Password, Role) VALUES(:username, :email, :password, :role)";
+        $sql = "INSERT INTO tbl_species(species_name) VALUES(:species_name)";
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(":username", $json["username"]);
-        $stmt->bindParam(":email", $json["email"]);
-        $stmt->bindParam(":password", password_hash($json["password"], PASSWORD_DEFAULT));
-        $stmt->bindParam(":role", $json["role"]);
+        $stmt->bindParam(":species_name", $json["species_name"]);
         $stmt->execute();
         return $stmt->rowCount() > 0 ? 1 : 0;
     }
 
-    function updateUser($json)
+    function addOwners($json)
     {
         include 'db.php';
         $json = json_decode($json, true);
-        $sql = "UPDATE Users SET Username = :username, Email = :email, Role = :role WHERE UserID = :userid";
+        $sql = "INSERT INTO tbl_owners(owner_name,owner_contact_details,owner_address) VALUES(:owner_name,:owner_contact_details,:owner_address)";
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(":username", $json["username"]);
-        $stmt->bindParam(":email", $json["email"]);
-        $stmt->bindParam(":role", $json["role"]);
-        $stmt->bindParam(":userid", $json["userid"]);
+        $stmt->bindParam(":owner_name", $json["owner_name"]);
+        $stmt->bindParam(":owner_contact_details", $json["owner_contact_details"]);
+        $stmt->bindParam(":owner_address", $json["owner_address"]);
         $stmt->execute();
         return $stmt->rowCount() > 0 ? 1 : 0;
     }
 
-    function deleteUser($json)
+    function addBreeds($json)
     {
         include 'db.php';
         $json = json_decode($json, true);
-        $sql = "DELETE FROM Users WHERE UserID = :userid";
+        $sql = "INSERT INTO tbl_breeds(breed_name,species_id) VALUES(:breed_name,:species_id)";
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(":userid", $json["userid"]);
+        $stmt->bindParam(":breed_name", $json["breed_name"]);
+        $stmt->bindParam(":species_id", $json["species_id"]);
         $stmt->execute();
         return $stmt->rowCount() > 0 ? 1 : 0;
     }
 
-    function getUserDetails()
-    {
-        include 'db.php';
-        $sql = "SELECT UserID, Username, Email, Role FROM Users";
-        $stmt = $conn->prepare($sql);
-        $stmt->execute();
-        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        return json_encode($result);
-    }
-
-    // Pets operations
-    function addPet($json)
+    function addPets($json)
     {
         include 'db.php';
         $json = json_decode($json, true);
-        $sql = "INSERT INTO Pets(Name, Species, Breed, Age, Photo, OwnerID) VALUES(:name, :species, :breed, :age, :photo, :ownerid)";
+        $sql = "INSERT INTO tbl_pets(pet_name,species_id,breed_id,date_of_birth,owner_id) VALUES(:pet_name,:species_id,:breed_id,:date_of_birth,:owner_id)";
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(":name", $json["name"]);
-        $stmt->bindParam(":species", $json["species"]);
-        $stmt->bindParam(":breed", $json["breed"]);
-        $stmt->bindParam(":age", $json["age"]);
-        $stmt->bindParam(":photo", $json["photo"]);
-        $stmt->bindParam(":ownerid", $json["ownerid"]);
+        $stmt->bindParam(":pet_name", $json["pet_name"]);
+        $stmt->bindParam(":species_id", $json["species_id"]);
+        $stmt->bindParam(":breed_id", $json["breed_id"]);
+        $stmt->bindParam(":date_of_birth", $json["date_of_birth"]);
+        $stmt->bindParam(":owner_id", $json["owner_id"]);
         $stmt->execute();
         return $stmt->rowCount() > 0 ? 1 : 0;
     }
 
-    function updatePet($json)
+    function updateSpecies($json)
     {
         include 'db.php';
         $json = json_decode($json, true);
-        $sql = "UPDATE Pets SET Name = :name, Species = :species, Breed = :breed, Age = :age, Photo = :photo WHERE PetID = :petid";
+        $sql = "UPDATE tbl_species SET species_name = :species_name WHERE species_id = :species_id";
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(":name", $json["name"]);
-        $stmt->bindParam(":species", $json["species"]);
-        $stmt->bindParam(":breed", $json["breed"]);
-        $stmt->bindParam(":age", $json["age"]);
-        $stmt->bindParam(":photo", $json["photo"]);
-        $stmt->bindParam(":petid", $json["petid"]);
+        $stmt->bindParam(":species_name", $json["species_name"]);
+        $stmt->bindParam(":species_id", $json["species_id"]);
+        $stmt->execute();
+        return $stmt->rowCount() > 0 ? 1 : 0;
+    }
+
+    function updateOwners($json)
+    {
+        include 'db.php';
+        $json = json_decode($json, true);
+        $sql = "UPDATE tbl_owners SET owner_name = :owner_name, owner_contact_details = :owner_contact_details, owner_address = :owner_address WHERE owner_id = :owner_id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(":owner_name", $json["owner_name"]);
+        $stmt->bindParam(":owner_contact_details", $json["owner_contact_details"]);
+        $stmt->bindParam(":owner_address", $json["owner_address"]);
+        $stmt->bindParam(":owner_id", $json["owner_id"]);
+        $stmt->execute();
+        return $stmt->rowCount() > 0 ? 1 : 0;
+    }
+
+    function updateBreeds($json)
+    {
+        include 'db.php';
+        $json = json_decode($json, true);
+        $sql = "UPDATE tbl_breeds SET breed_name = :breed_name, species_id = :species_id WHERE breed_id = :breed_id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(":breed_name", $json["breed_name"]);
+        $stmt->bindParam(":species_id", $json["species_id"]);
+        $stmt->bindParam(":breed_id", $json["breed_id"]);
+        $stmt->execute();
+        return $stmt->rowCount() > 0 ? 1 : 0;
+    }
+
+    function updatePets($json)
+    {
+        include 'db.php';
+        $json = json_decode($json, true);
+        $sql = "UPDATE tbl_pets SET pet_name = :pet_name, species_id = :species_id, breed_id = :breed_id, date_of_birth = :date_of_birth, owner_id = :owner_id WHERE pet_id = :pet_id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(":pet_name", $json["pet_name"]);
+        $stmt->bindParam(":species_id", $json["species_id"]);
+        $stmt->bindParam(":breed_id", $json["breed_id"]);
+        $stmt->bindParam(":date_of_birth", $json["date_of_birth"]);
+        $stmt->bindParam(":owner_id", $json["owner_id"]);
+        $stmt->bindParam(":pet_id", $json["pet_id"]);
+        $stmt->execute();
+        return $stmt->rowCount() > 0 ? 1 : 0;
+    }
+
+    function deleteSpecies($json)
+    {
+        include 'db.php';
+        $json = json_decode($json, true);
+        $sql = "DELETE FROM tbl_species WHERE species_id = :species_id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(":species_id", $json["species_id"]);
+        $stmt->execute();
+        return $stmt->rowCount() > 0 ? 1 : 0;
+    }
+
+    function deleteOwner($json)
+    {
+        include 'db.php';
+        $json = json_decode($json, true);
+        $sql = "DELETE FROM tbl_owners WHERE owner_id = :owner_id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(":owner_id", $json["owner_id"]);
+        $stmt->execute();
+        return $stmt->rowCount() > 0 ? 1 : 0;
+    }
+
+    function deleteBreed($json)
+    {
+        include 'db.php';
+        $json = json_decode($json, true);
+        $sql = "DELETE FROM tbl_breeds WHERE breed_id = :breed_id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(":breed_id", $json["breed_id"]);
         $stmt->execute();
         return $stmt->rowCount() > 0 ? 1 : 0;
     }
@@ -96,110 +152,158 @@ class PetManagementAPI
     {
         include 'db.php';
         $json = json_decode($json, true);
-        $sql = "DELETE FROM Pets WHERE PetID = :petid";
+        $sql = "DELETE FROM tbl_pets WHERE pet_id = :pet_id";
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(":petid", $json["petid"]);
+        $stmt->bindParam(":pet_id", $json["pet_id"]);
         $stmt->execute();
         return $stmt->rowCount() > 0 ? 1 : 0;
+    }
+
+    function getOwnerDetails()
+    {
+        include 'db.php';
+        $sql = "SELECT * FROM tbl_owners";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $stmt->rowCount() > 0 ? json_encode($result) : 0;
+    }
+
+    // function getSpeciesDetails()
+    // {
+    //     include "connection.php";
+    //     $sql = "SELECT * FROM tbl_species";
+    //     $stmt = $conn->prepare($sql);
+    //     $stmt->execute();
+    //     $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    //     return $stmt->rowCount() > 0 ? json_encode($result) : 0;
+    // }
+
+    function getSpeciesDetails()
+    {
+        include 'db.php';
+        $sql = "SELECT * FROM tbl_species";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if ($stmt->rowCount() > 0) {
+            echo json_encode($result);  // Echo the JSON result
+        } else {
+            echo json_encode([]);  // Return an empty array instead of 0 for consistency
+        }
+    }
+
+
+    function getBreedDetails()
+    {
+        include 'db.php';
+        $sql = "SELECT * FROM tbl_breeds";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $stmt->rowCount() > 0 ? json_encode($result) : 0;
     }
 
     function getPetDetails()
     {
         include 'db.php';
-        $sql = "SELECT p.*, u.Username as OwnerName FROM Pets p JOIN Users u ON p.OwnerID = u.UserID";
+    
+        $sql = "SELECT 
+                    a.owner_name, 
+                    b.pet_name, 
+                    c.species_name, 
+                    d.breed_name, 
+                    b.date_of_birth 
+                FROM tbl_owners AS a 
+                INNER JOIN tbl_pets AS b ON b.owner_id = a.owner_id 
+                INNER JOIN tbl_species AS c ON c.species_id = b.species_id 
+                INNER JOIN tbl_breeds AS d ON d.breed_id = b.breed_id";
+    
         $stmt = $conn->prepare($sql);
         $stmt->execute();
         $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        return json_encode($result);
+    
+        return $stmt->rowCount() > 0 ? json_encode($result) : json_encode([]);
     }
+    
 
-    // VeterinaryRecords operations
-    function addVeterinaryRecord($json)
+    function getPetDetailsWithFilter($json)
     {
         include 'db.php';
         $json = json_decode($json, true);
-        $sql = "INSERT INTO VeterinaryRecords(PetID, VetID, Diagnosis, Treatment, Prescription, VisitDate) VALUES(:petid, :vetid, :diagnosis, :treatment, :prescription, :visitdate)";
+        $sql = "SELECT a.owner_name,b.pet_name, c.species_name, d.breed_name, b.date_of_birth 
+        FROM tbl_owners AS a 
+        INNER JOIN tbl_pets AS b ON b.pet_id = a.owner_id 
+        INNER JOIN tbl_species AS c ON c.species_id = b.pet_id 
+        INNER JOIN tbl_breeds AS d ON d.breed_id = b.pet_id 
+        WHERE a.owner_name = :owner_name OR d.breed_name = :breed_name OR c.species_name = :species_name";
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(":petid", $json["petid"]);
-        $stmt->bindParam(":vetid", $json["vetid"]);
-        $stmt->bindParam(":diagnosis", $json["diagnosis"]);
-        $stmt->bindParam(":treatment", $json["treatment"]);
-        $stmt->bindParam(":prescription", $json["prescription"]);
-        $stmt->bindParam(":visitdate", $json["visitdate"]);
-        $stmt->execute();
-        return $stmt->rowCount() > 0 ? 1 : 0;
-    }
-
-    function updateVeterinaryRecord($json)
-    {
-        include 'db.php';
-        $json = json_decode($json, true);
-        $sql = "UPDATE VeterinaryRecords SET Diagnosis = :diagnosis, Treatment = :treatment, Prescription = :prescription WHERE RecordID = :recordid";
-        $stmt = $conn->prepare($sql);
-        $stmt->bindParam(":diagnosis", $json["diagnosis"]);
-        $stmt->bindParam(":treatment", $json["treatment"]);
-        $stmt->bindParam(":prescription", $json["prescription"]);
-        $stmt->bindParam(":recordid", $json["recordid"]);
-        $stmt->execute();
-        return $stmt->rowCount() > 0 ? 1 : 0;
-    }
-
-    function getVeterinaryRecords($json)
-    {
-        include 'db.php';
-        $json = json_decode($json, true);
-        $sql = "SELECT vr.*, p.Name as PetName, u.Username as VetName 
-                FROM VeterinaryRecords vr 
-                JOIN Pets p ON vr.PetID = p.PetID 
-                JOIN Users u ON vr.VetID = u.UserID 
-                WHERE vr.PetID = :petid";
-        $stmt = $conn->prepare($sql);
-        $stmt->bindParam(":petid", $json["petid"]);
+        $stmt->bindParam(":owner_name", $json["owner_name"]);
+        $stmt->bindParam(":breed_name", $json["breed_name"]);
+        $stmt->bindParam(":species_name", $json["species_name"]);
         $stmt->execute();
         $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        return json_encode($result);
+        return $stmt->rowCount() > 0 ? json_encode($result) : 0;
     }
 }
 
 $json = isset($_POST["json"]) ? $_POST["json"] : "0";
 $operation = isset($_POST["operation"]) ? $_POST["operation"] : "0";
-$api = new PetManagementAPI();
+$savePets = new SavePets();
 
 switch ($operation) {
-    case "addUser":
-        echo $api->addUser($json);
+    case "addSpecies":
+        echo $savePets->addSpecies($json);
         break;
-    case "updateUser":
-        echo $api->updateUser($json);
+    case "addOwners":
+        echo $savePets->addOwners($json);
         break;
-    case "deleteUser":
-        echo $api->deleteUser($json);
+    case "addBreeds":
+        echo $savePets->addBreeds($json);
         break;
-    case "getUserDetails":
-        echo $api->getUserDetails();
+    case "addPets":
+        echo $savePets->addPets($json);
         break;
-    case "addPet":
-        echo $api->addPet($json);
+    case "updateSpecies":
+        echo $savePets->updateSpecies($json);
         break;
-    case "updatePet":
-        echo $api->updatePet($json);
+    case "updateOwners":
+        echo $savePets->updateOwners($json);
+        break;
+    case "updateBreeds":
+        echo $savePets->updateBreeds($json);
+        break;
+    case "updatePets":
+        echo $savePets->updatePets($json);
+        break;
+    case "deleteSpecies":
+        echo $savePets->deleteSpecies($json);
+        break;
+    case "deleteOwner":
+        echo $savePets->deleteOwner($json);
+        break;
+    case "deleteBreed":
+        echo $savePets->deleteBreed($json);
         break;
     case "deletePet":
-        echo $api->deletePet($json);
+        echo $savePets->deletePet($json);
+        break;
+    case "getOwnerDetails":
+        echo $savePets->getOwnerDetails();
+        break;
+    case "getSpeciesDetails":
+        echo $savePets->getSpeciesDetails();
+        break;
+    case "getBreedDetails":
+        echo $savePets->getBreedDetails();
         break;
     case "getPetDetails":
-        echo $api->getPetDetails();
+        echo $savePets->getPetDetails();
         break;
-    case "addVeterinaryRecord":
-        echo $api->addVeterinaryRecord($json);
-        break;
-    case "updateVeterinaryRecord":
-        echo $api->updateVeterinaryRecord($json);
-        break;
-    case "getVeterinaryRecords":
-        echo $api->getVeterinaryRecords($json);
+    case "getPetDetailsWithFilter":
+        echo $savePets->getPetDetailsWithFilter($json);
         break;
     default:
-        echo json_encode(["error" => "Invalid operation"]);
         break;
 }
