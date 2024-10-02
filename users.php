@@ -1,73 +1,86 @@
 <?php
-  header('Content-Type: application/json');
-  header("Access-Control-Allow-Origin: *");
-  include 'db.php';
-  include 'headers.php';
 
+header('Content-Type: application/json');
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
 
-  class User {
-    function login($json){
-      include 'db.php';
-      //{username:'pitok',password:12345}
-      $json = json_decode($json, true);
-      $sql = "SELECT * FROM users 
-              WHERE username = :username AND password = :password";
-      $stmt = $conn->prepare($sql);
-      $stmt->bindParam(':username', $json['username']);
-      $stmt->bindParam(':password', $json['password']);
-      $stmt->execute();
-      $returnValue = $stmt->fetchAll(PDO::FETCH_ASSOC);
-      unset($conn); unset($stmt);
-      return json_encode($returnValue);
+class UserOperations
+{
+    function handleLogin($data)
+    {
+        include 'db.php';
+        $username = $data['username'];
+        $password = $data['password'];
+
+        $stmt = $conn->prepare("SELECT UserID, Username, Email, Password, user_level FROM Users WHERE Username = ?");
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows > 0) {
+            $user = $result->fetch_assoc();
+            if (password_verify($password, $user['Password'])) {
+                unset($user['Password']);
+                return json_encode(['success' => true, 'user' => $user, 'operation' => 'login']);
+            } else {
+                return json_encode(['success' => false, 'message' => 'Invalid credentials', 'operation' => 'login']);
+            }
+        } else {
+            return json_encode(['success' => false, 'message' => 'User not found', 'operation' => 'login']);
+        }
     }
 
+    function handleRegister($data)
+    {
+        include 'db.php';
+        $username = $data['username'];
+        $email = $data['email'];
+        $password = password_hash($data['password'], PASSWORD_DEFAULT);
+        $firstName = $data['firstName'] ?? null;
+        $lastName = $data['lastName'] ?? null;
+        $userLevel = 'owner'; // Set default user level to 'owner'
 
-    function register($json){
-      //{username:'pitok',password:'12345', fullname:'PItok Batolata'}
-      include 'db.php';
-      $json = json_decode($json, true);
-      $sql = "INSERT INTO users(username, password, fullname)
-        VALUES(:username, :password, :fullname)";
-      $stmt = $conn->prepare($sql);
-      $stmt->bindParam(':username', $json['username']);
-      $stmt->bindParam(':password', $json['password']);
-      $stmt->bindParam(':fullname', $json['fullname']);
-      $stmt->execute();
-      $returnValue = $stmt->rowCount() > 0 ? 1 : 0;
-      unset($conn); unset($stmt);
-      return json_encode($returnValue);
+        // Check if email already exists
+        $stmt = $conn->prepare("SELECT UserID FROM Users WHERE Email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows > 0) {
+            return json_encode(['success' => false, 'message' => 'Email already exists', 'operation' => 'register']);
+        }
+        
+        $stmt->close();
+
+        // Insert new user
+        $stmt = $conn->prepare("INSERT INTO Users (Username, Email, Password, user_firstname, user_lastname, user_level) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssss", $username, $email, $password, $firstName, $lastName, $userLevel);
+
+        if ($stmt->execute()) {
+            return json_encode(['success' => true, 'message' => 'User registered successfully', 'operation' => 'register']);
+        } else {
+            return json_encode(['success' => false, 'message' => 'Registration failed', 'operation' => 'register']);
+        }
     }
 
+    // Add more functions for other operations as needed
+}
 
-    function getUsers(){
+$json = isset($_POST["json"]) ? $_POST["json"] : "0";
+$operation = isset($_POST["operation"]) ? $_POST["operation"] : "0";
 
+$userOps = new UserOperations();
 
-    }
-  }
-
-
-  //submitted by the client - operation and json data
-  if ($_SERVER['REQUEST_METHOD'] == 'GET'){
-    $operation = $_GET['operation'];
-    $json = $_GET['json'];
-  }else if($_SERVER['REQUEST_METHOD'] == 'POST'){
-    $operation = $_POST['operation'];
-    $json = $_POST['json'];
-  }
-
-
-  $user = new User();
-  switch($operation){
+switch ($operation) {
     case "login":
-      echo $user->login($json);
-      break;
+        echo $userOps->handleLogin(json_decode($json, true));
+        break;
     case "register":
-      echo $user->register($json);
-      break;
-    case "getUsers":
-      echo $user->getUsers($json);
-      break;
-    // default:
-    //   echo json_encode(["error" => "Invalid operation"]);
-  }
+        echo $userOps->handleRegister(json_decode($json, true));
+        break;
+    default:
+        break;
+}
+
 ?>
