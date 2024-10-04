@@ -10,15 +10,19 @@ class AdoptionOperations
     function handleCreateAdoption($data)
     {
         include 'db.php';
-        $query = "INSERT INTO tbl_adoptions (PetID, AdopterID, AdoptionDate, Status, Notes) 
-                  VALUES (?, ?, ?, ?, ?)";
+        $query = "INSERT INTO tbl_adoptions (PetID, AdopterID, AdoptionDate, Status) 
+                  VALUES (:PetID, :AdopterID, :AdoptionDate, :Status)";
         
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("iisss", $data['PetID'], $data['AdopterID'], $data['AdoptionDate'], 
-                          $data['Status'], $data['Notes']);
+        $stmt = $pdo->prepare($query);
+        $stmt->execute([
+            ':PetID' => $data['PetID'],
+            ':AdopterID' => $data['AdopterID'],
+            ':AdoptionDate' => $data['AdoptionDate'],
+            ':Status' => $data['Status']
+        ]);
         
-        if ($stmt->execute()) {
-            return json_encode(['success' => true, 'message' => 'Adoption created successfully', 'id' => $stmt->insert_id, 'operation' => 'createAdoption']);
+        if ($stmt->rowCount() > 0) {
+            return json_encode(['success' => true, 'message' => 'Adoption created successfully', 'id' => $pdo->lastInsertId(), 'operation' => 'createAdoption']);
         } else {
             return json_encode(['success' => false, 'message' => 'Failed to create adoption', 'operation' => 'createAdoption']);
         }
@@ -27,14 +31,13 @@ class AdoptionOperations
     function handleGetAdoption($data)
     {
         include 'db.php';
-        $query = "SELECT * FROM tbl_adoptions WHERE AdoptionID = ?";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("i", $data['id']);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        $query = "SELECT * FROM tbl_adoptions WHERE AdoptionID = :id";
+        $stmt = $pdo->prepare($query);
+        $stmt->execute([':id' => $data['id']]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        if ($result->num_rows > 0) {
-            return json_encode(['success' => true, 'data' => $result->fetch_assoc(), 'operation' => 'getAdoption']);
+        if ($result) {
+            return json_encode(['success' => true, 'data' => $result, 'operation' => 'getAdoption']);
         } else {
             return json_encode(['success' => false, 'message' => 'Adoption not found', 'operation' => 'getAdoption']);
         }
@@ -43,14 +46,19 @@ class AdoptionOperations
     function handleUpdateAdoption($data)
     {
         include 'db.php';
-        $query = "UPDATE tbl_adoptions SET PetID = ?, AdopterID = ?, AdoptionDate = ?, Status = ?, Notes = ? 
-                  WHERE AdoptionID = ?";
+        $query = "UPDATE tbl_adoptions SET PetID = :PetID, AdopterID = :AdopterID, AdoptionDate = :AdoptionDate, 
+                  Status = :Status WHERE AdoptionID = :AdoptionID";
         
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("iisssi", $data['PetID'], $data['AdopterID'], $data['AdoptionDate'], 
-                          $data['Status'], $data['Notes'], $data['AdoptionID']);
+        $stmt = $pdo->prepare($query);
+        $result = $stmt->execute([
+            ':PetID' => $data['PetID'],
+            ':AdopterID' => $data['AdopterID'],
+            ':AdoptionDate' => $data['AdoptionDate'],
+            ':Status' => $data['Status'],
+            ':AdoptionID' => $data['AdoptionID']
+        ]);
         
-        if ($stmt->execute()) {
+        if ($result) {
             return json_encode(['success' => true, 'message' => 'Adoption updated successfully', 'operation' => 'updateAdoption']);
         } else {
             return json_encode(['success' => false, 'message' => 'Failed to update adoption', 'operation' => 'updateAdoption']);
@@ -60,53 +68,23 @@ class AdoptionOperations
     function handleDeleteAdoption($data)
     {
         include 'db.php';
-        $query = "DELETE FROM tbl_adoptions WHERE AdoptionID = ?";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("i", $data['id']);
+        $query = "DELETE FROM tbl_adoptions WHERE AdoptionID = :id";
+        $stmt = $pdo->prepare($query);
+        $result = $stmt->execute([':id' => $data['id']]);
         
-        if ($stmt->execute()) {
+        if ($result) {
             return json_encode(['success' => true, 'message' => 'Adoption deleted successfully', 'operation' => 'deleteAdoption']);
         } else {
             return json_encode(['success' => false, 'message' => 'Failed to delete adoption', 'operation' => 'deleteAdoption']);
         }
     }
 
-    function handleListAdoptions($data)
+    function handleListAdoptions()
     {
         include 'db.php';
-        $query = "SELECT * FROM tbl_adoptions WHERE 1=1";
-        $params = [];
-        $types = "";
-
-        if (!empty($data['PetID'])) {
-            $query .= " AND PetID = ?";
-            $params[] = $data['PetID'];
-            $types .= "i";
-        }
-
-        if (!empty($data['AdopterID'])) {
-            $query .= " AND AdopterID = ?";
-            $params[] = $data['AdopterID'];
-            $types .= "i";
-        }
-
-        if (!empty($data['Status'])) {
-            $query .= " AND Status = ?";
-            $params[] = $data['Status'];
-            $types .= "s";
-        }
-
-        $stmt = $conn->prepare($query);
-        if (!empty($params)) {
-            $stmt->bind_param($types, ...$params);
-        }
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        $adoptions = [];
-        while ($row = $result->fetch_assoc()) {
-            $adoptions[] = $row;
-        }
+        $query = "SELECT * FROM tbl_adoptions";
+        $stmt = $pdo->query($query);
+        $adoptions = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         return json_encode(['success' => true, 'data' => $adoptions, 'operation' => 'listAdoptions']);
     }
@@ -116,6 +94,7 @@ $json = isset($_POST["json"]) ? $_POST["json"] : "0";
 $operation = isset($_POST["operation"]) ? $_POST["operation"] : "0";
 
 $adoptionOps = new AdoptionOperations();
+
 switch ($operation) {
     case "createAdoption":
         echo $adoptionOps->handleCreateAdoption(json_decode($json, true));
@@ -130,9 +109,10 @@ switch ($operation) {
         echo $adoptionOps->handleDeleteAdoption(json_decode($json, true));
         break;
     case "listAdoptions":
-        echo $adoptionOps->handleListAdoptions(json_decode($json, true));
+        echo $adoptionOps->handleListAdoptions();
         break;
     default:
+        echo json_encode(['success' => false, 'message' => 'Invalid operation', 'operation' => $operation]);
         break;
 }
 
